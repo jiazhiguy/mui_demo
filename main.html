@@ -1,0 +1,85 @@
+<!doctype html>
+<html>
+
+	<head>
+		<meta charset="utf-8">
+		<title></title>
+		<meta name="viewport" content="width=device-width,initial-scale=1,minimum-scale=1,maximum-scale=1,user-scalable=no" />
+		<link href="css/mui.css" rel="stylesheet" />
+	</head>
+
+	<body>
+		<div class="mui-content">
+		        <ul class="mui-table-view mui-grid-view mui-grid-9">
+		            <li class="mui-table-view-cell mui-media mui-col-xs-4 mui-col-sm-3" ><a href="#" id="subpage1">
+		                    <span class="mui-icon mui-icon-home"></span>
+		                    <div class="mui-media-body">旅游景点</div></a></li>
+		            <li class="mui-table-view-cell mui-media mui-col-xs-4 mui-col-sm-3"><a href="#" id="subpage2">
+		                    <span class="mui-icon mui-icon-email"><span class="mui-badge">5</span></span>
+		                    <div class="mui-media-body">为民服务点</div></a></li>
+		            <li class="mui-table-view-cell mui-media mui-col-xs-4 mui-col-sm-3"><a href="#" id="subpage3">
+		                    <span class="mui-icon mui-icon-chatbubble"></span>
+		                    <div class="mui-media-body">土地托管</div></a></li>
+		            <li class="mui-table-view-cell mui-media mui-col-xs-4 mui-col-sm-3"><a href="#" id="subpage4">
+		                    <span class="mui-icon mui-icon-location"></span>
+		                    <div class="mui-media-body">产业延伸</div></a></li>
+		            <li class="mui-table-view-cell mui-media mui-col-xs-4 mui-col-sm-3"><a href="#" id="subpage5">
+		                    <span class="mui-icon mui-icon-search"></span>
+		                    <div class="mui-media-body">在线体验</div></a></li>
+		            <li class="mui-table-view-cell mui-media mui-col-xs-4 mui-col-sm-3"><a href="#" id="subpage6">
+		                    <span class="mui-icon mui-icon-phone"></span>
+		                    <div class="mui-media-body">食宿餐饮产品</div></a></li>
+<!-- 		            <li class="mui-table-view-cell mui-media mui-col-xs-4 mui-col-sm-3"><a href="#" id="subpage7">
+		                    <span class="mui-icon mui-icon-gear"></span>
+		                    <div class="mui-media-body">7</div></a></li>
+		            <li class="mui-table-view-cell mui-media mui-col-xs-4 mui-col-sm-3"><a href="#">
+		                    <span class="mui-icon mui-icon-info"></span>
+		                    <div class="mui-media-body">8</div></a></li>
+		           <li class="mui-table-view-cell mui-media mui-col-xs-4 mui-col-sm-3"><a href="#">
+		                    <span class="mui-icon mui-icon-more"></span>
+		                    <div class="mui-media-body">9</div></a></li> -->
+		        </ul> 
+		</div>
+		<script src="js/mui.js"></script>
+		<script type="text/javascript">
+			mui.init()
+			window.addEventListener('refresh',function(){
+				 location.reload();//父页面仅仅是刷新页面，当然也可以自定义逻辑函数写在里面 
+			})
+			d_url="tab-webview-subpage-about.html"
+			lists=[
+				{element:"subpage1",tagId:1,url:d_url,localcion:"on"},
+				{element:"subpage2",tagId:4,url:d_url,localcion:"on"},
+				{element:"subpage3",tagId:5,url:d_url,localcion:"on"},
+				{element:"subpage4",tagId:3,url:d_url,localcion:"off"},
+			]
+			for (i=0;i<lists.length;i++){
+				let item=lists[i]
+				clickOpen(item.element,item.tagId,item.url,item.localcion)
+				
+			}
+			function clickOpen(element,tagId,url,localcion){
+				document.getElementById(element).addEventListener('tap',function(){
+					localStorage.setItem('tagId', tagId)
+					localStorage.setItem('localcion',localcion)
+					mui.openWindow({
+							url:url,
+					});
+				});	
+			}
+			document.getElementById("subpage5").addEventListener('tap',function(){
+				mui.openWindow({
+						url:"tab-webview-subpage-online.html",
+				});
+			})
+			document.getElementById("subpage6").addEventListener('tap',function(){
+				mui.openWindow({
+						url:"tab-webview-subpage-contact.html",
+				});
+			})
+
+			
+		</script>
+	</body>
+
+</html>

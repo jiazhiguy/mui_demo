@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="utf-8">
+		<title>****</title>
+		<meta name="viewport" content="width=device-width, initial-scale=1,maximum-scale=1,user-scalable=no">
+		<meta name="apple-mobile-web-app-capable" content="yes">
+		<meta name="apple-mobile-web-app-status-bar-style" content="black">
+
+		<link rel="stylesheet" href="css/mui.min.css">
+		<script type="text/javascript" src="http://api.map.baidu.com/getscript?v=2.0&ak=Qo4b9RNLIFxHWaY863sqGZsLA2jym9yX"></script>
+		<script type="text/javascript" src="http://developer.baidu.com/map/jsdemo/demo/convertor.js"></script>
+
+		<style>
+			html,body {
+				background-color: #efeff4;
+			}
+			.title{
+				margin: 20px 15px 10px;
+				color: #6d6d72;
+				font-size: 15px;
+			}
+	/* 		#card_heade{
+				text-align:center
+			} */
+			/* * { touch-action: pan-y; } */
+			* { touch-action: none; }
+/* 		.mui-table-view-cell.mui-active{
+			background-color: #0062CC;
+		} */
+		</style>
+	</head>
+	<body>
+		<div id="popover" class="mui-popover">
+		  <ul class="mui-table-view" >
+		  </ul>
+		</div>
+		<div class="mui-content">
+			<div class="mui-card">
+				<!--页眉，放置标题-->
+				<div class="mui-card-header">
+					<div id="card_header">
+					</div>
+					<!-- <a href="#popover" id="openPopover" class="mui-icon  mui-icon-bars"></a> -->
+					<a href="#popover" id="openPopover" >
+						<span class="mui-icon mui-icon-more"></span>
+						<div class="mui-media-body">更多</div>
+					</a>
+					<a href="#" id="openLocal">
+						<span class="mui-icon mui-icon-location"></span>
+						<div class="mui-media-body">位置</div>
+					</a>
+					<a href="#" id="backhome" >
+						<span class="mui-icon mui-icon-home"></span>
+						<div class="mui-media-body">主页</div>
+					</a>
+				</div>
+				<div id="localMap" class="mui-popover" style="width:200px;height:300px">
+				</div>
+	<!-- 			<div id="#div"></div>
+				<div id="r_result" class="mui-popover mui-popover-bottom"" style="width:200px;height:300px">
+				</div> -->
+			<!-- 	<div id="r-result" class="mui-popover"> 
+				</div> -->
+				<!--内容区-->
+				<div class="mui-card-content">
+					<div class="mui-slider">
+					  <div class="mui-slider-group mui-slider-loop" id="slider_1">
+					  </div>
+					</div>
+				</div>
+				<!--页脚，放置补充信息或支持的操作-->
+				<div class="mui-card-footer" id="card_footer"></div>
+			</div>
+		</div>
+	
+	</body>
+	<script src="js/mui.min.js"></script>
+	<script>
+		let apiServerUrl="http://114.116.97.28:8000";
+		let imgMaxWidth=250;
+		let imgMaxHeight=250;
+		let tagId=1;
+		let localcion="off";
+		let geoids=[];
+		// let initId=-1;
+		let infos=[];
+		let mapObject=null;
+		tagId=localStorage.getItem("tagId");
+		localcion=localStorage.getItem("localcion")
+		console.log(localStorage.getItem("localcion"))
+
+		mui.init({
+			swipeBack:true ,//启用右滑关闭功能
+			beforeback: function() {　　 
+				//获得父页面的webview
+				var list = plus.webview.currentWebview().opener();　　
+				//触发父页面的自定义事件(refresh),从而进行刷新
+				mui.fire(list, 'refresh');
+				//返回true,继续页面关闭逻辑
+				return true;
+			}
+		});
+		if (localStorage.getItem("localcion")=="off"){
+			console.log("remove")
+			let localObject = document.getElementById('openLocal');
+			if (localObject != null){
+				localObject.parentNode.removeChild(localObject);
+			} 
+		}
+
+		mui.getJSON(apiServerUrl+'/api/v1/tag2geo',{tag:tagId},function(data){
+			geoids=data.msg[0].geoids
+			// console.log(geoids)
+			len=geoids.length;
+			if (len!=0){
+				mui.getJSON(apiServerUrl+'/api/v1/info',{geoid:geoids.join(","),more:true},function(data){
+					// console.log(data)
+					infos=data.msg
+					let randomIndex=Math.floor(Math.random()*(infos.length-1));
+					let initinfo=infos[randomIndex]
+					show(initinfo)
+				})
+				let div=document.getElementById("popover")
+				let ul=div.childNodes.item(1);
+				document.getElementById("openPopover").addEventListener('tap',function(){
+					ul.innerHTML="";
+					updateList(ul,infos,6,1,creatItems)
+				});
+
+			}
+		})
+		document.getElementById("backhome").addEventListener('tap',function(){
+			mui.back()
+		});
+		function show(info){
+			let mapdiv=document.getElementById("localMap")
+			mapdiv.innerHTML=""
+			let sliderImgs=[];
+			let resources=info.Resource;
+			resources.forEach(msg=>{
+				sliderImgs.push(msg["path"])
+			})
+			let name=info.name
+			let description=info.description
+			let sliderGroup = document.getElementById("slider_1")
+			sliderGroup.innerHTML=""
+			let sliderLength=sliderImgs.length
+			for (let i=0;i<sliderLength;i++) {
+					if (sliderLength>=2&&i==0){
+					let div=document.createElement("div")
+					let img=document.createElement("img")
+					div.setAttribute("class","mui-slider-item mui-slider-item-duplicate")
+					img.setAttribute("src",apiServerUrl+"/file/"+sliderImgs[sliderLength-1])
+					img.setAttribute("onload","AutoResizeImage(250,250,this)")
+					sliderGroup.appendChild(div)
+					div.appendChild(img)
+				}
+				let div=document.createElement("div")
+				let img=document.createElement("img")
+				div.setAttribute("class","mui-slider-item")
+				img.setAttribute("src",apiServerUrl+"/file/"+sliderImgs[i])
+				img.setAttribute("onload","AutoResizeImage(imgMaxWidth,imgMaxHeight,this)")
+				sliderGroup.appendChild(div)
+				div.appendChild(img)
+				if (sliderLength>=2&&i==sliderLength-1){
+					let div=document.createElement("div")
+					let img=document.createElement("img")
+					div.setAttribute("class","mui-slider-item mui-slider-item-duplicate")
+					img.setAttribute("src",apiServerUrl+"/file/"+sliderImgs[0])
+					img.setAttribute("onload","AutoResizeImage(imgMaxWidth,imgMaxHeight,this)")
+					sliderGroup.appendChild(div)
+					div.appendChild(img)
+				}
+			}
+			let header=document.getElementById("card_header")
+			header.innerHTML=name
+			let footer=document.getElementById("card_footer")
+			footer.innerHTML=description
+			let gallery = mui('.mui-slider');
+			gallery.slider({
+			  interval:5000//自动轮播周期，若为0则不自动播放，默认为0；
+			});
+			//添加地图
+			let mapLocal=document.getElementById("openLocal")
+			// mapLocal.innerHTML=""
+			if(mapLocal){
+				mapLocal.addEventListener('tap',function(){
+					console.log("click map")
+					if(mapObject!=null){
+						mapObject.removeOverlay()
+					}
+					let longitude=info.longitude
+					let latitude=info.latitude
+					let postion=new BMap.Point(longitude, latitude)
+					if (mapObject==null){
+						console.log("this init map")
+						mapObject=initMap(postion,"localMap")
+					}
+					// else{
+					// 	console.log("used before map")
+					// 	mapObject.centerAndZoom(postion,10);
+					// 	mapObject.addOverlay(new BMap.Marker(postion));
+					// }
+					mui.plusReady(function(){
+						plus.geolocation.getCurrentPosition(function(position){
+							let currentLon = position.coords.longitude;
+							let currentLat = position.coords.latitude;
+							let gpsPoint = new BMap.Point(currentLon,currentLat);
+							BMap.Convertor.translate(gpsPoint,2,function(c_position){
+								
+								let driving = new BMap.DrivingRoute(mapObject, {renderOptions:{map: mapObject, autoViewport: true},});
+								driving.search(c_position,postion);
+								
+							}); //坐标转换	
+						},function(e){
+							mui.toast("异常:" + e.message);
+						});
+					})
+					
+					mui('#localMap').popover('show',document.getElementById("openLocal"));
+					// mui('#r_result').popover('toggle',document.getElementById("localMap"));
+				})
+				
+			}
+
+		}
+		//判断点击元素序列号并执行回调函数
+		function sequnce(arrLi,fn){
+			for(var i = 0; i < arrLi.length; i++){
+				(function(j){
+					arrLi[j].addEventListener("tap",function(){	
+						fn(j)
+					})
+				}(i))
+			}
+		}
+		function updateList(elemetObject,arrLi,everyNum,pageIndex,fn){
+			let itemArray=[];
+			let len=arrLi.length
+			let start=everyNum*(pageIndex-1)
+			let end=everyNum*pageIndex>len?len:everyNum*pageIndex
+			if (pageIndex>Math.ceil(len/everyNum)){
+				return
+			}
+			for(i=start;i<end;i++){
+				itemArray.push(arrLi[i])
+			}
+			fn(elemetObject,itemArray,arrLi,everyNum,pageIndex)
+		}
+		function creatItems(ul,items,infos,everyNum,currentPageIndex){
+			let totalPages=Math.ceil(infos.length/everyNum)
+			let nextPageIndex=currentPageIndex+1
+			let upPageIndex=currentPageIndex-1
+			let li=document.createElement("li")
+			li.setAttribute("class","mui-table-view-cell")
+			let pagespan=document.createElement("span")
+			let downspan=document.createElement("span")
+			let upspan=document.createElement("span")
+			pagespan.innerHTML=currentPageIndex+"/"+totalPages+"页"
+			downspan.setAttribute("class","mui-icon mui-icon-arrowthinright")
+			upspan.setAttribute("class","mui-icon mui-icon-arrowthinleft")
+			downspan.addEventListener("tap",function(){
+				ul.innerHTML="";
+				console.log("dowm"+currentPageIndex)
+				if(currentPageIndex>=totalPages){
+					nextPageIndex=1
+				}
+				updateList(ul,infos,everyNum,nextPageIndex,creatItems)
+			})
+			upspan.addEventListener("tap",function(){
+			
+				ul.innerHTML="";
+				console.log("up"+currentPageIndex)
+				if(currentPageIndex<=1){
+					upPageIndex=totalPages
+				}
+				updateList(ul,infos,everyNum,upPageIndex,creatItems)
+				// updateList(infos,everyNum,nextPageIndex-1)
+			})
+			li.appendChild(pagespan)
+			li.appendChild(upspan)
+			li.appendChild(downspan)
+			ul.appendChild(li)
+			// console.log("dow*****")
+			let itemslen=items.length
+			let liArray=[];
+			for (i=0;i<itemslen;i++){
+				li=document.createElement("li")
+				li.setAttribute("class","mui-table-view-cell")
+				// console.log(i)
+				li.innerHTML=items[i].name
+				liArray.push(li)
+				ul.appendChild(li)
+			}
+			sequnce(liArray,function(index){
+				mui('#popover').popover('toggle',document.getElementById("openPopover"));
+				show(infos[index])
+			})
+	
+		}
+		function initMap(point,elementId){
+			console.log(point)
+			// let c=document.getElementById(elementId)
+			// c.innerHTML=""
+			map = new BMap.Map(elementId); //创建地图
+			map.addControl(new BMap.NavigationControl());
+			map.addControl(new BMap.ScaleControl());
+			map.addControl(new BMap.OverviewMapControl());
+			map.centerAndZoom(point,10);
+			map.addOverlay(new BMap.Marker(point));
+			return map
+		}
+		function AutoResizeImage(maxWidth,maxHeight,objImg){  
+				var img= new Image();
+				img.src=objImg.src;//定义一个图片对象  
+				var hRatio;  
+				var wRatio;  
+				var Ratio=1;  
+				var w=img.width;//图片的宽  
+				var h=img.height;//图片的长  
+				wRatio=maxWidth/w;//宽压缩的比例  
+				hRatio=maxHeight/h;//长压缩的比例  
+				if(wRatio==0&&hRatio==0){  
+					Ratio=1;//如果压缩最大值都为零，按原图比例压缩  
+				}else if(wRatio==0){  
+					if(hRatio<1)Ratio=hRatio;//如果宽为零，长的比例小于一的情况按长比例压缩  
+				}else if(hRatio==0){  
+					if(wRatio<1)Ratio=wRatio;//如果长的压缩最大值为零，宽的比例小于一的情况按宽压缩  
+				}else if(wRatio<1&&hRatio<1){  
+					Ratio=(wRatio<hRatio?wRatio:hRatio);//如果长宽最大压缩值都不为零，取比例的最小值  
+				}else if(wRatio>1&&hRatio>1){  
+					Ratio=(wRatio>hRatio?wRatio:hRatio);//如果长宽最大压缩值都不为零，取比例的最小值  
+				}
+				w=w*Ratio;  
+				h=h*Ratio;  
+				//赋值  
+				objImg.height=h;  
+				objImg.width=w;  
+			}
+		
+	</script>
+</html>

@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="utf-8">
+		<title>****</title>
+		<meta name="viewport" content="width=device-width, initial-scale=1,maximum-scale=1,user-scalable=no">
+		<meta name="apple-mobile-web-app-capable" content="yes">
+		<meta name="apple-mobile-web-app-status-bar-style" content="black">
+
+		<link rel="stylesheet" href="css/mui.min.css">
+		<script type="text/javascript" src="http://api.map.baidu.com/getscript?v=2.0&ak=Qo4b9RNLIFxHWaY863sqGZsLA2jym9yX"></script>
+		<script type="text/javascript" src="http://developer.baidu.com/map/jsdemo/demo/convertor.js"></script>
+
+		<style>
+			html,body {
+				background-color: #efeff4;
+			}
+			.title{
+				margin: 20px 15px 10px;
+				color: #6d6d72;
+				font-size: 15px;
+			}
+	/* 		#card_heade{
+				text-align:center
+			} */
+			/* * { touch-action: pan-y; } */
+			* { touch-action: none; }
+/* 		.mui-table-view-cell.mui-active{
+			background-color: #0062CC;
+		} */
+		</style>
+	</head>
+	<body>
+		<div id="popover" class="mui-popover">
+			  <ul class="mui-table-view" >
+			  </ul>
+		</div>
+		<div class="mui-content">
+			<div class="mui-card">
+				<!--页眉，放置标题-->
+				<div class="mui-card-header">
+					<div id="card_header">食宿餐饮目录
+					</div>
+					<a href="#" id="backhome" >
+						<span class="mui-icon mui-icon-home"></span>
+						<div class="mui-media-body">主页</div>
+					</a>
+				</div>
+				<!--内容区-->
+				<div class="mui-card-content">
+					<div class="mui-slider">
+					  <div class="mui-slider-group mui-slider-loop" id="slider_1">
+					  </div>
+					</div>
+				</div>
+				<!--页脚，放置补充信息或支持的操作-->
+				<div>
+					<sapn id="card_footer_bar"></span>
+					<div id="card_footer">
+					</div>
+				</div>
+			</div>
+		</div>
+		<div id="subpage"></div>
+	</body>
+	<script src="js/mui.min.js"></script>
+	<script>
+		let numofpage=4;//每页显示传感器数据数量
+		let numofpage_bar=5
+		let apiServerUrl="http://114.116.28.203:8080/api/iotNode";
+		let imgMaxWidth=250;
+		let imgMaxHeight=250;
+		let subpage_style = {
+				top: '0px',
+				bottom: '0px'
+			};
+		let lists=[
+					{
+					name:"雅安安桥土特产",
+					description:"土特产",
+					url:"https://shop226763408.taobao.com/shop/view_shop.htm?spm=a211vu.server-web-home.category.d703.64f02d58ronRaB&mytmenu=mdianpu&user_number_id=2206773882897",
+					type:"4"},
+				  ]
+		let mapObject=null;
+		mui.init({
+			swipeBack:true ,//启用右滑关闭功能
+			beforeback: function() {　　 
+				//获得父页面的webview
+				var list = plus.webview.currentWebview().opener();　　
+				//触发父页面的自定义事件(refresh),从而进行刷新
+				mui.fire(list, 'refresh');
+				//返回true,继续页面关闭逻辑
+				return true;
+			}
+		});
+		let footer=document.getElementById("card_footer")
+		footer.innerHTML=""
+		let ul=document.createElement("ul")
+		ul.setAttribute("class","mui-table-view")
+		footer.appendChild(ul)
+		updateList(ul,lists,numofpage,1,creatItems)
+		document.getElementById("backhome").addEventListener('tap',function(){
+			mui.back()
+		});
+		
+		//判断点击元素序列号并执行回调函数
+		function sequnce(arrLi,fn){
+			for(var i = 0; i < arrLi.length; i++){
+				(function(j){
+					arrLi[j].addEventListener("tap",function(){	
+						fn(j)
+					})
+				}(i))
+			}
+		}
+		function updateList(elemetObject,arrLi,everyNum,pageIndex,fn){
+			let itemArray=[];
+			let len=arrLi.length
+			let start=everyNum*(pageIndex-1)
+			let end=everyNum*pageIndex>len?len:everyNum*pageIndex
+			if (pageIndex>Math.ceil(len/everyNum)){
+				return
+			}
+			for(i=start;i<end;i++){
+				itemArray.push(arrLi[i])
+			}
+			fn(elemetObject,itemArray,arrLi,everyNum,pageIndex)
+		}
+	
+		function creatItems(ul,items,infos,everyNum,currentPageIndex){
+			let totalPages=Math.ceil(infos.length/everyNum)
+			if(infos.length>everyNum){
+				let nextPageIndex=currentPageIndex+1
+				let upPageIndex=currentPageIndex-1
+				let li=document.createElement("li")
+				li.setAttribute("class","mui-table-view-cell")
+				let pagespan=document.createElement("span")
+				let downspan=document.createElement("span")
+				let upspan=document.createElement("span")
+				pagespan.innerHTML=currentPageIndex+"/"+totalPages+"页"
+				downspan.setAttribute("class","mui-icon mui-icon-arrowthinright")
+				upspan.setAttribute("class","mui-icon mui-icon-arrowthinleft")
+				downspan.addEventListener("tap",function(){
+					ul.innerHTML="";
+					if(currentPageIndex>=totalPages){
+						nextPageIndex=1
+					}
+					updateList(ul,infos,everyNum,nextPageIndex,creatItems)
+				})
+				upspan.addEventListener("tap",function(){
+					ul.innerHTML="";
+					if(currentPageIndex<=1){
+						upPageIndex=totalPages
+					}
+					updateList(ul,infos,everyNum,upPageIndex,creatItems)
+					// updateList(infos,everyNum,nextPageIndex-1)
+				})
+				li.appendChild(pagespan)
+				li.appendChild(upspan)
+				li.appendChild(downspan)
+				ul.appendChild(li)
+			}
+			let itemslen=items.length
+			let liArray=[];
+			for (i=0;i<itemslen;i++){
+				li=document.createElement("li")
+				li.setAttribute("class","mui-table-view-cell")
+				// console.log(i)
+				li.innerHTML=items[i].name
+				let span=document.createElement("span")
+				span.setAttribute("class","mui-badge")
+				span.innerHTML=items[i].description
+				li.appendChild(span)
+				liArray.push(li)
+				ul.appendChild(li)
+
+			}
+			sequnce(liArray,function(index){
+				mui('#popover').popover('toggle',document.getElementById("openPopover"));
+				// show(infos[index])
+				console.log(items[index].url)
+				createIframe('#subpage',{
+					url: items[index].url,
+					style: subpage_style
+				});
+			})
+		}
+		/*浏览器的兼容处理方法*/
+		var createIframe = function (el, opt) {
+			var elContainer = document.querySelector(el);
+			var wrapper = document.querySelector(".mui-iframe-wrapper");
+			if(!wrapper){
+				// 创建wrapper 和 iframe
+				wrapper = document.createElement('div');
+				wrapper.className = 'mui-iframe-wrapper';
+				for(var i in opt.style){
+					wrapper.style[i] = opt.style[i];
+				}
+				var iframe = document.createElement('iframe');
+				iframe.src = opt.url;
+				iframe.id = opt.id || opt.url;
+				iframe.name = opt.id;
+				wrapper.appendChild(iframe);
+				elContainer.appendChild(wrapper);
+			}else{
+				var iframe = wrapper.querySelector('iframe');
+				iframe.src = opt.url;
+				iframe.id = opt.id || opt.url;
+				iframe.name = iframe.id;
+			}
+		}
+	</script>
+</html>
